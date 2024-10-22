@@ -258,7 +258,7 @@ The result is promising, showing that the Liger Kernel can significantly reduce 
 
 # DEMO
 
-To reproduce the results and profile the actual memory usage reduction and throughput improvement by the Liger Kernel, I designed the following experiments to demonstrate the Liger Kernel's impact on training LLMs. All demo code is available on the following GitHub Repository [112-2-Artificial-Intelligence-Midterm](https://github.com/DandinPower/112-2-Artificial-Intelligence-Midterm).
+To reproduce the results and profile the actual memory usage reduction and throughput improvement by the Liger Kernel, I designed the following experiments to demonstrate the Liger Kernel's impact on training LLMs. All demo code is available on the following GitHub Repository [113-1-Artificial-Intelligence-Midterm](https://github.com/DandinPower/112-2-Artificial-Intelligence-Midterm).
 
 - **Experiment Environment:**
     - Operating System: Ubuntu 24.04 Desktop
