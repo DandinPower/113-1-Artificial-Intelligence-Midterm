@@ -12,4 +12,9 @@ log the memory usage and throughput into txt
 pip requirements freeze and install
 
 run and tensorboard profiling
+
+`tensorboard --logdir=logs/`
+
 run and pytorch memory snapshots
+
+`pytorch.org/memory_viz`

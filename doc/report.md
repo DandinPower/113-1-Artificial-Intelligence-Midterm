@@ -6,7 +6,7 @@
 - **Group:** 10
 
 
-## Title and Authors
+# Title and Authors
 
 - **Title:** Liger Kernel: Efficient Triton Kernels for LLM Training
 - **Authors:** Pin-Lun Hsu, Yun Dai, Vignesh Kothapalli (LinkedIn Inc.)
@@ -18,23 +18,23 @@
 
 ## Recent LLM Model Architecture
 
-In recent Large Language Model Architecture, the model architecture has undergone some changes compared to the original transformer architecture. The original transformer architecture is a stack of encoder and decoder, with self-attention and cross-attention [Attention is all you need]. However, after the OpenAI GPT series, the state-of-the-art architecture became a decoder-only model [GPT1,2,3]. Nowadays, the state-of-the-art open-source model, Llama 3.2, also utilizes a dense decoder-only architecture, similar to GPT-2. However, they have some small differences compared to GPT-2.
+In recent Large Language Model Architecture, the model architecture has undergone some changes compared to the original transformer architecture. The original transformer architecture is a stack of encoder and decoder, with self-attention and cross-attention [1]. However, after the OpenAI GPT series, the state-of-the-art architecture became a decoder-only model [2,3,4]. Nowadays, the state-of-the-art open-source model, Llama 3.2, also utilizes a dense decoder-only architecture, similar to GPT-2. However, they have some small differences compared to GPT-2.
 
 ![image/llama3_arch.png](image/llama3_arch.png)
-- **Figure1: From GPT Architecture to Llama3 Architecture [https://github.com/rasbt/LLMs-from-scratch/blob/main/ch05/07_gpt_to_llama/converting-gpt-to-llama2.ipynb].**
+- **Figure1: From GPT Architecture to Llama3 Architecture [5].**
 
 The key differences are:
-1. Convert absolute positional embedding into RoPE (Rotary Positional Embedding) [https://arxiv.org/abs/2104.09864].
-2. Convert Layer Normalization into RMS Norm [RMSnorm].
-3. Convert GELU into SwiGLU [SwiGLU].
+1. Convert absolute positional embedding into RoPE (Rotary Positional Embedding) [6].
+2. Convert Layer Normalization into RMS Norm [7].
+3. Convert GELU into SwiGLU [8].
 4. Remove Dropout.
-5. Convert multi-head attention into Group Query Attention (GQA) [GQA].
+5. Convert multi-head attention into Group Query Attention (GQA) [9].
 
 ## The GPU VRAM Usage During Training
 
 ### Static Memory
 
-When training Large Language Models (LLMs), a significant portion of GPU memory is consumed by static memory usage, which primarily consists of three main components: model weights, gradients, and optimizer states. Understanding these components is crucial for efficient memory management during the training process.
+When training Large Language Models (LLMs), a significant portion of GPU memory is consumed by static memory usage, which primarily consists of three main components: model weights, gradients, and optimizer states. Understanding these components is crucial for efficient memory management during the training process [10].
 
 #### Model Weights
 
@@ -46,7 +46,7 @@ Gradients are essential for updating the model weights during the training proce
 
 #### Optimizer States
 
-Optimizer states often consume the largest portion of static memory during training. The memory requirements for optimizer states like momentum, variance, master weights in popular optimizers like Adam can be significant. For instance, using mixed-precision training with Adam [?] or AdamW [?] can require up to 12 bytes per parameter just for optimizer states. Because it requires storing two additional tensors for each parameter: the momentum and variance of the gradients. When using mixed-precision training with Adam, the memory consumption includes:
+Optimizer states often consume the largest portion of static memory during training. The memory requirements for optimizer states like momentum, variance, master weights in popular optimizers like Adam can be significant. For instance, using mixed-precision training with Adam [11] or AdamW [12] can require up to 12 bytes per parameter just for optimizer states. Because it requires storing two additional tensors for each parameter: the momentum and variance of the gradients. When using mixed-precision training with Adam, the memory consumption includes:
 1. An fp32 copy of the parameters (4 bytes per parameter)
 2. Momentum (4 bytes per parameter)
 3. Variance (4 bytes per parameter)
@@ -73,19 +73,19 @@ For example, a 1.5 billion parameter model would require at least 24GB of static
 
 To reduce static memory usage, several techniques can be employed:
 
-1. **ZeRO**: This technique distributes optimizer states across multiple GPUs, reducing the memory required on each device. The popular implementation of ZeRO [zero paper] is available in DeepSpeed [GitHub] or PyTorch FSDP [FSDP doc or paper].
+1. **ZeRO**: This technique distributes optimizer states across multiple GPUs, reducing the memory required on each device. The popular implementation of ZeRO [13] is available in DeepSpeed [14] or PyTorch FSDP [15].
 
-2. **DeepSpeed Offloading**: DeepSpeed allows offloading optimizer states to CPU memory or even SSD memory, freeing up GPU memory for model weights, gradients, and optimizer states [Zero Offload, Zero Infinity].
+2. **DeepSpeed Offloading**: DeepSpeed allows offloading optimizer states to CPU memory or even SSD memory, freeing up GPU memory for model weights, gradients, and optimizer states [16,17].
     ![Figure 2: ZeRO Memory Consumption](image/deepspeed_zero.png)
-    - Figure 2: ZeRO Memory Consumption [Zero Infinity paper]
+    - Figure 2: ZeRO Memory Consumption [17]
 
-3. **Mixed Precision Training**: Using lower precision (e.g., bfloat16, float16) for weights and gradients can significantly reduce memory consumption and improve training speed if supported by the hardware [NVIDIA Mixed Precision Training blog].
+3. **Mixed Precision Training**: Using lower precision (e.g., bfloat16, float16) for weights and gradients can significantly reduce memory consumption and improve training speed if supported by the hardware [18].
 
-4. **8-bit Optimizers**: This focuses on quantizing optimizer states, such as momentum and variance, into 8-bit by utilizing block-wise quantization to prevent precision degradation [https://arxiv.org/abs/2110.02861].
+4. **8-bit Optimizers**: This focuses on quantizing optimizer states, such as momentum and variance, into 8-bit by utilizing block-wise quantization to prevent precision degradation [19].
 
-5. **Gradient Low-Rank Projection (GaLore)**: This approach can reduce optimizer state memory usage by up to 65.5% while maintaining performance by utilizing Low-Rank Projection for optimizer states [https://arxiv.org/abs/2403.03507].
+5. **Gradient Low-Rank Projection (GaLore)**: This approach can reduce optimizer state memory usage by up to 65.5% while maintaining performance by utilizing Low-Rank Projection for optimizer states [20].
 
-6. **LoRA and QLoRA**: LoRA is a technique that reduces static memory usage by decreasing the number of trainable weights. It projects the same weight matrix using two low-rank matrices, which reduces memory, gradients, and optimizer states. Since the frozen part of the model still requires complete model weights, QLoRA works by further quantizing that part to reduce the memory consumption of model weights [LoRA paper, QLoRA paper].
+6. **LoRA and QLoRA**: LoRA is a technique that reduces static memory usage by decreasing the number of trainable weights. It projects the same weight matrix using two low-rank matrices, which reduces memory, gradients, and optimizer states. Since the frozen part of the model still requires complete model weights, QLoRA works by further quantizing that part to reduce the memory consumption of model weights [21,22].
 
 
 ### Activation Memory
@@ -93,14 +93,14 @@ To reduce static memory usage, several techniques can be employed:
 Activation memory refers to the memory used to store intermediate tensors (activations) generated during the forward pass of a neural network. These activations are essential for the backward pass, where gradients are computed for updating model parameters. Activation memory is dynamic and varies with the batch size, model architecture, and sequence length. It tends to dominate GPU memory usage during training because activations need to be stored until they are used in backpropagation.
 
 ![image/activation_memory_usage.png](image/activation_memory_usage.png)
-- **Figure 3: Memory footprint statistics for training massive models [https://arxiv.org/abs/2202.01306].**
+- **Figure 3: Memory footprint statistics for training massive models [10].**
 
 #### Gradient Checkpointing (Activation Checkpointing)
 
-Gradient checkpointing is a technique that trades compute for memory by recomputing intermediate activations during the backward pass instead of storing them in memory. This can significantly reduce the memory footprint during training, especially for models with large memory requirements. However, gradient checkpointing can introduce additional computation overhead due to recomputing activations, which may impact training speed.
+Gradient checkpointing is a technique that trades compute for memory by recomputing intermediate activations during the backward pass instead of storing them in memory. This can significantly reduce the memory footprint during training, especially for models with large memory requirements. However, gradient checkpointing can introduce additional computation overhead due to recomputing activations, which may impact training speed [23].
 
 ![image/gradient_checkpointing.gif](image/gradient_checkpointing.gif)
-- **Figure 4: Example of Gradient Checkpointing [https://github.com/cybertronai/gradient-checkpointing].**
+- **Figure 4: Example of Gradient Checkpointing [23].**
 
 ### GPU VRAM Bottleneck
 
@@ -133,7 +133,7 @@ So after we have optimized the static memory like using DeepSpeed CPU Offloading
 
 ## Kernel Operation Level Optimization
 
-In current PyTorch, we can easily develop models by executing calculations in the eager execution model. However, this is not the best way to fully utilize GPU power because there are many computational overheads, including function call stack, dispatching, and CUDA kernel launch latencies [https://pytorch.org/blog/accelerating-pytorch-with-cuda-graphs/, https://pytorch.org/blog/optimizing-production-pytorch-performance-with-graph-transformations/, https://developer.nvidia.com/blog/understanding-the-visualization-of-overhead-and-latency-in-nsight-systems/].
+In current PyTorch, we can easily develop models by executing calculations in the eager execution model. However, this is not the best way to fully utilize GPU power because there are many computational overheads, including function call stack, dispatching, and CUDA kernel launch latencies [24,25,26].
 
 ### Dispatching Overhead
 
@@ -157,7 +157,7 @@ Eager mode can result in suboptimal memory usage patterns:
 ### Kernel Fusion
 
 Due to the above overheads, kernel fusion is a technique that combines multiple operations into a single kernel to reduce overhead and improve performance. By fusing operations together and optimizing the kernel implementation, we can reduce the number of kernel launches, memory transfers, and dispatching overheads.  
-A popular approach to perform kernel fusion is writing GPU kernel operations in Triton [https://openai.com/index/triton/].
+A popular approach to perform kernel fusion is writing GPU kernel operations in Triton [27].
 
 Triton is a language and compiler for parallel programming. It aims to provide a Python-based programming environment for productively writing custom DNN compute kernels capable of running at maximal throughput on modern GPU hardware.
 
@@ -185,7 +185,7 @@ The Liger Kernel uses Triton to implement fused operations at the kernel level. 
 2. **Kernel Level Optimization:** Compared to the eager execution model, Triton can optimize at the kernel operation level, enabling more detailed optimizations.
 3. **Python-native:** There's no need to maintain different types of code files, like C++ and Python.
 4. **Clean dependency:** Triton is a standalone library that can be easily integrated into existing codebases.
-5. **Real Production Ready Usecase:** There are already several successful kernel operation-level projects done using Triton, such as FlashAttention and Unsloth [flashattention, unsloth].
+5. **Real Production Ready Usecase:** There are already several successful kernel operation-level projects done using Triton, such as FlashAttention and Unsloth [28,29].
 
         
 # Method
@@ -195,15 +195,15 @@ The Liger Kernel uses Triton to implement fused operations at the kernel level. 
 In the previous section, we discussed the memory bottleneck caused by cross-entropy-related activations during training. The Fused Linear Cross Entropy aims to solve this problem through a two-way approach:
 1. **Split the cross-entropy calculation into chunks to reduce peak memory usage.**
 
-    The reason we can separate the cross-entropy calculation into chunks is that to calculate the **cross-entropy loss** in a Causal Language Model (LM) for an input with shape `[batch_size, seq_length]`, it is compare the predicted token probabilities with the ground truth token indices for the next token at each position in the sequence, but the final loss is the average of the losses at each position. Therefore, the cross-entropy loss can be calculated independently for each position in the sequence. The formula for the cross-entropy loss is:
-    \[
-    \mathcal{L}_{\text{cross-entropy}} = -\frac{1}{N}\frac{1}{T-1} \sum_{i=1}^{N} \sum_{t=1}^{T-1} \log p(y_t | x_{1:t}) 
-    \]
+    The reason we can separate the cross-entropy calculation into chunks is that to calculate the **cross-entropy loss** in a Causal Language Model (LM) for an input with shape `[batch_size, seq_length]`, it is compare the predicted token probabilities with the ground truth token indices for the next token at each position in the sequence, but the final loss is the average of the losses at each position. Therefore, the cross-entropy loss can be calculated independently for each position in the sequence. The formula for the cross-entropy loss is: 
+    
+    ![image/cross_entropy_formula.svg](image/cross_entropy_formula.svg).
+
     Where:
-    - \(N\) is the batch size
-    - \(T\) is the sequence length
-    - \(y_t\) is the ground truth token at time step \(t+1\)
-    - \(p(y_t | x_{1:t})\) is the predicted probability of token \(y_t\) given the tokens \(x_{1:t}\)
+    - *N* is the batch size
+    - *T* is the sequence length
+    - *y_t* is the ground truth token at time step *t+1*
+    - *p(y_t | x_{1:t})* is the predicted probability of token *y_t* given the tokens *x_{1:t}*
 
 2. **Calculate the backward gradient when calculating the forward pass, utilizing in-place calculation to reduce memory usage.**
 
@@ -214,19 +214,25 @@ In the previous section, we discussed the memory bottleneck caused by cross-entr
 
 The advantages of the Fused Linear Cross Entropy are that by chunking the cross-entropy calculation, the peak memory usage is not calculated by `batch_size * seq_size * vocab_size`, but by `chunk_size * vocab_size`, which can limit the peak memory usage, even if the batch size or sequence length is increased. By calculating the backward gradient during the forward pass, it can further reduce memory usage by not storing intermediate activations. Last but not least, the fused operation can reduce overhead by reducing the number of kernel launches, memory transfers, and dispatching overheads.
 
-However, there are some disadvantages to the Fused Linear Cross Entropy. If the chunk size is too small, the calculation will be done chunk by chunk, which will decrease GPU utilization. Therefore, setting the correct chunk size is crucial for the performance of the Fused Linear Cross Entropy. In their current work, they try to set the chunk size so that the temporary activation memory is the same as the hidden_size activation, which can keep peak memory usage stable. The chunk size is calculated by \[2^{\lceil \log_2 \lceil \frac{BT}{\lceil \frac{V}{H} \rceil} \rceil \rceil}\]. This formula can be explained as follows: since hidden activation is \(BT * H\), and chunk activation is \(chunk\_size * V\), so \(chunk_size\) = \( \frac{BT}{V / H} \). And because the chunk size should be a power of 2, the ceiling function is applied, followed by calculating the log2 and raising 2 to that power.
+However, there are some disadvantages to the Fused Linear Cross Entropy. If the chunk size is too small, the calculation will be done chunk by chunk, which will decrease GPU utilization. Therefore, setting the correct chunk size is crucial for the performance of the Fused Linear Cross Entropy. In their current work, they try to set the chunk size so that the temporary activation memory is the same as the hidden_size activation, which can keep peak memory usage stable. The chunk size is calculated by ![image/chunk_size_equation.svg](image/chunk_size_equation.svg).
+
+This formula can be explained as follows: since hidden activation is *BT * H*, and chunk activation is *chunk_size * V*, so *chunk_size =* ![image/partial_chunk_size_equation.svg](image/partial_chunk_size_equation.svg). And because the chunk size should be a power of 2, the ceiling function is applied, followed by calculating the log2 and raising 2 to that power.
 
 
 ## Other Fused Kernels
 
 Following the same principle as the Fused Linear Cross Entropy, the Liger Kernel also provides other fused kernels to optimize the training process. These fused kernels include:
-1. **RMSNorm (Root Mean Square Normalization) [Biao Zhang and Rico Sennrich. Root mean square layer normalization. Advances in Neural Information Processing Systems, 32, 2019.]**
-2. **RoPE (Rotary Positional Embedding) [Roformer. Enhanced transformer with rotary position embedding]**
-3. **SwiGLU [Glu variants improve transformer]**
-4. **GeGLU [Glu variants improve transformer]**
-5. **Layer Normalization [Jimmy Lei Ba, Jamie Ryan Kiros, and Geoffrey E Hinton. Layer normalization]**
+1. **RMSNorm (Root Mean Square Normalization) [7]**
+2. **RoPE (Rotary Positional Embedding) [6]**
+3. **SwiGLU [8]**
+4. **GeGLU [8]**
+5. **Layer Normalization [30]**
 
-These fused kernels aim to fuse small operations together rather than executing them one by one. For example, in the case of RMSNorm, the formula is \[x_{\text{norm}} = \frac{x}{\text{RMS}}, \text{RMS} = \sqrt{\frac{1}{N} \sum_{i=1}^{N} x_i^2}\]. The calculation includes both the normalization and scaling parts, which can be fused together. Additionally, because it is a fused operation, some calculations can be done in place to reduce memory usage, and values like the RMS can be cached to reduce computation overhead.
+These fused kernels aim to fuse small operations together rather than executing them one by one. For example, in the case of RMSNorm, the formula is: 
+
+![image/rms_norm_equation.svg](image/rms_norm_equation.svg)
+
+The calculation includes both the normalization and scaling parts, which can be fused together. Additionally, because it is a fused operation, some calculations can be done in place to reduce memory usage, and values like the RMS can be cached to reduce computation overhead.
 
 # Experimental Results
 
@@ -252,15 +258,15 @@ The result is promising, showing that the Liger Kernel can significantly reduce 
 
 # DEMO
 
-To reproduce the results better, and profile the actual memory usage reduction and throughput improvement by the Liger Kernel, i design the following experiments to demonstrate the Liger Kernel's impact on training LLMs. All Demo code is available on the following Github Repository[112-2-Artificial-Intelligence-Midterm](https://github.com/DandinPower/112-2-Artificial-Intelligence-Midterm).
+To reproduce the results and profile the actual memory usage reduction and throughput improvement by the Liger Kernel, I designed the following experiments to demonstrate the Liger Kernel's impact on training LLMs. All demo code is available on the following GitHub Repository [112-2-Artificial-Intelligence-Midterm](https://github.com/DandinPower/112-2-Artificial-Intelligence-Midterm).
 
-- **Experiments Environment:**
-    - Opearting System: Ubuntu 24.04 Desktop
+- **Experiment Environment:**
+    - Operating System: Ubuntu 24.04 Desktop
     - CPU: i9-13900K
     - DRAM: 128GB
     - GPU: NVIDIA 4090 24GB
 
-- **Experiments Setup:**
+- **Experiment Setup:**
     - Batch Size: 1, 4, 8, 16, 32, 64, 96, 112
     - Sequence Length: 1024
     - Model: Llama3.2 1B (Huggingface Transformers)
@@ -269,72 +275,105 @@ To reproduce the results better, and profile the actual memory usage reduction a
     - Enable Gradient Checkpointing
     - Enable DeepSpeed CPU Weights and Optimizer States Offloading
 
+This setup moves all static memory from the GPU to the CPU and discards all activation memory, so the peak memory usage is mainly caused by checkpointing values, temporary activations, and the gradients for the optimizer step. This allows us to easily observe the impact of the Liger Kernel.
 
-This setup is the move all static memory from GPU to CPU and discard all activation memory, so the peak memory usage is mainly caused by the checkpointing value, temporary activations and the gradients for the optimizer step.
+- **Memory Usage Profiling:**
 
-1. **Memory Usage Profiling:**
+    ![image/memory_snapshot_comparison.png](image/memory_snapshot_comparison.png)
+    - **Figure 12: VRAM Snapshot of Llama3.2 1B, Batch Size 8, Seq Length 1024 with (a) HuggingFace Transformers (b) Liger Kernel enabled.**
 
-    - Figure 12: Memory Snapshot Profiling at Batch ? with (a) Liger Kernel (b) Huggingface Transformers
+    The memory snapshot is generated using the PyTorch profiler and Tensorboard [citation]. From the result, we can observe that after enabling Fused Linear Cross Entropy, the peak memory issue no longer exists.
 
-2. **Comparison of Peak Memory Usage:**
+- **Comparison of Throughput and Peak Memory Usage:**
 
-3. **Comparison of Throughput:**
+    ![image/comparison_2_strategies.png](image/comparison_2_strategies.png)
+    - **Figure 13: Comparison of Throughput and Peak Memory Usage between Liger Kernel and Huggingface Transformers.**
+
+    From the peak memory usage results, we can see that without using the Liger Kernel, due to Cross-Entropy-related activations, the peak memory usage increases linearly with the batch size. However, when using the Liger Kernel, the peak memory usage scales much more slowly. HuggingFace encountered an OOM issue at batch size 16, but the Liger Kernel can scale up to batch size 112 without any issue. Throughput is also improved by using the Liger Kernel for two reasons: one, the kernel execution speed is faster, and two, we can run at a larger batch size, which utilizes the GPU more efficiently.
 
 ## Ablation Study on Fused Linear Cross Entropy
 
-The reason to do this ablation study is that the Fused Linear Cross Entropy solve the most memory bottleneck, so knowing how many improvements it can bring is crucial.
+The reason for conducting this ablation study is that Fused Linear Cross Entropy solves the most significant memory bottleneck, so understanding how much improvement it brings is crucial.
 
-- **Experiments Strategies:**
-    - Enable All Liger Kernel (Fused Linear Cross Entropy, RMSNorm, RoPE, SwiGLU)
-    - Enable All Liger Kernel without Fused Linear Cross Entropy (RMSNorm, RoPE, SwiGLU)
-    - Disable All Liger Kernel
+- **Experiment Strategies:**
+    - Disable all Liger Kernels
+    - Enable all Liger Kernels except Fused Linear Cross Entropy (RMSNorm, RoPE, SwiGLU)
+    - Enable all Liger Kernels (Fused Linear Cross Entropy, RMSNorm, RoPE, SwiGLU)
 
-1. **Comparison of Peak Memory Usage:**
+- **Comparison of Throughput and Peak Memory Usage:**
 
-2. **Comparison of Throughput:**
+    ![image/comparison_3_strategies.png](image/comparison_3_strategies.png)
+    - **Figure 14: Ablation Study on Fused Linear Cross Entropy.**
 
+    From the results, we can confirm that nearly 100% of the memory reduction and throughput improvement is caused by Fused Linear Cross Entropy. The other fused kernels do not have a significant impact on memory usage and throughput. Therefore, Fused Linear Cross Entropy is the most crucial component of the Liger Kernel.
 
-
-# Conclusion and Personal Reflection
+# Conclusion
 
 - **The main problem of the current LLM training**
-    
-    Cross Entropy Peak Memory Let the batch size and sequence length be limited.
+
+    The primary challenge in training Large Language Models (LLMs) today is the significant peak memory consumption associated with the cross-entropy loss computation. This memory bottleneck restricts the scalability of training by limiting the permissible batch size and sequence length. As models grow in size and complexity, the demand for memory-efficient training techniques becomes increasingly critical to enable the training of larger and more capable models without incurring prohibitive computational costs or requiring excessively large hardware resources.
 
 - **The main contribution of the Liger kernel**
 
-    1. fused kernel
-    2. chunking 
+    The Liger Kernel addresses this critical memory bottleneck through two key innovations:
+    
+    1. **Fused Kernel Operations:** By combining multiple operations into a single kernel, the Liger Kernel reduces the overhead associated with kernel launches, memory transfers, and dispatching. This fusion not only optimizes the execution speed but also minimizes the peak memory usage by eliminating intermediate storage of activation tensors. Specifically, the Fused Linear Cross Entropy kernel integrates the cross-entropy loss calculation and gradient computation into one streamlined process, significantly lowering memory overhead.
+    
+    2. **Chunking Strategy:** The Liger Kernel employs a chunking mechanism to divide the cross-entropy calculation into smaller, manageable segments. This approach ensures that the peak memory usage is proportional to the chunk size rather than the entire batch size or sequence length. By dynamically adjusting the chunk size based on the model's hidden size and vocabulary size, the Liger Kernel maintains a stable memory footprint even as the batch size and sequence length scale up. This chunking strategy effectively decouples memory usage from model scaling, enabling more flexible and efficient training of large-scale language models.
+
+In summary, the Liger Kernel provides a robust solution to the memory challenges in LLM training by optimizing kernel operations and employing intelligent memory management techniques. 
+
+# Personal Reflection
 
 - **How to train the large language model efficiently in 2024**
 
-    There are many memory efficient training techniques for training large langauge models nowadays, thanks to the Huggingface Transformers library developers and the open-source community. The above technique (also include liger kernel) all integrated into the Huggingface Transformers library, so it is easy to use and deploy. The following is my recommended way to train a large language model in full parameter training (don't consider LoRA) memory efficiently in 2024:
+    There are many memory-efficient training techniques for training large language models nowadays, thanks to the Huggingface Transformers library developers and the open-source community. These techniques (including the Liger kernel) are all integrated into the Huggingface Transformers library, making them easy to use and deploy. The following is my recommended approach to efficiently train a large language model with full parameter training (not considering LoRA) in 2024:
 
-    - *The must enable no matter what:*
-        1. enable liger kernel
-        2. (if multiple GPUs) enable stage2 zero
-        3. enable gradient checkpointing (slightly increase computation overhead)
+    - *Essential settings to enable no matter what:*
+        1. Enable Liger kernel
+        2. (If multiple GPUs) Enable Stage 2 ZeRO
+        3. Enable gradient checkpointing (slightly increases computation overhead)
 
-    - *If Still have Out of Memory Issue:*
+    - *If still facing Out of Memory issues:*
 
-        4. enable mixed precision training (slightly degrade the precision)
-        5. (if multiple GPUs) enable stage3 zero (with additional communication footprint)
-        6. enable deepspeed cpu offloading (increase PCIE transfer overhead)
-        7. enable 8bit optimizer or GaLore (degrade the precision)
-        8. enable deepspeed nvme offloading (increase a lot PCIE transfer overhead)
+        4. Enable mixed precision training (slightly reduces precision)
+        5. (If multiple GPUs) Enable Stage 3 ZeRO (with additional communication overhead)
+        6. Enable DeepSpeed CPU offloading (increases PCIe transfer overhead)
+        7. Enable 8-bit optimizer or GaLore (reduces precision)
+        8. Enable DeepSpeed NVMe offloading (significantly increases PCIe transfer overhead)
+
 
 # Reference
 
-1. Liger kernel paper
-1. liger kernel talk: https://www.youtube.com/watch?v=gWble4FreV4
-1. pytorch profiler and tensorboard plugin
-2. deepspeed zero, fsdp
-3. deepspeed offloading
-4. gradient checkpointing
-5. lora
-6. Qlora
-6. 8bit optimizer
-7. triton
-9. flashattention
-10. unsloth.ai 
-11. nvidia mixed precision training
+1. Attention is all you need
+2. GPT1
+3. GPT2
+4. GPT3
+5. converting-gpt-to-llama2, https://github.com/rasbt/LLMs-from-scratch/blob/main/ch05/07_gpt_to_llama/converting-gpt-to-llama2.ipynb
+6. RoPE, https://arxiv.org/abs/2104.09864
+7. RMSnorm
+8. SwiGLU, Glu variants improve transformer
+9. GQA
+10. https://arxiv.org/abs/2202.01306
+11. Adam
+12. AdamW
+13. ZeRO paper
+14. DeepSpeed Github
+15. PyTorch FSDP
+16. ZeRO Offload
+17. ZeRO Infinity
+18. NVIDIA Mixed Precision Training blog
+19. https://arxiv.org/abs/2110.02861
+20. https://arxiv.org/abs/2403.03507
+21. LoRA paper
+22. QLoRA paper
+23. https://github.com/cybertronai/gradient-checkpointing
+24. https://pytorch.org/blog/accelerating-pytorch-with-cuda-graphs/
+25. https://pytorch.org/blog/optimizing-production-pytorch-performance-with-graph-transformations/
+26. https://developer.nvidia.com/blog/understanding-the-visualization-of-overhead-and-latency-in-nsight-systems/
+27. https://openai.com/index/triton/
+28. flashattention
+29. unsloth
+30. layer normalization
+31. Liger Kernel paper
+32. Liger Kernel Talk: https://www.youtube.com/watch?v=gWble4FreV4
