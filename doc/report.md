@@ -282,7 +282,7 @@ This setup moves all static memory from the GPU to the CPU and discards all acti
     ![image/memory_snapshot_comparison.png](image/memory_snapshot_comparison.png)
     - **Figure 12: VRAM Snapshot of Llama3.2 1B, Batch Size 8, Seq Length 1024 with (a) HuggingFace Transformers (b) Liger Kernel enabled.**
 
-    The memory snapshot is generated using the PyTorch profiler and Tensorboard [citation]. From the result, we can observe that after enabling Fused Linear Cross Entropy, the peak memory issue no longer exists.
+    The memory snapshot is generated using the PyTorch profiler and Tensorboard [33]. From the result, we can observe that after enabling Fused Linear Cross Entropy, the peak memory issue no longer exists.
 
 - **Comparison of Throughput and Peak Memory Usage:**
 
@@ -345,35 +345,36 @@ In summary, the Liger Kernel provides a robust solution to the memory challenges
 
 # Reference
 
-1. Attention is all you need
-2. GPT1
-3. GPT2
-4. GPT3
-5. converting-gpt-to-llama2, https://github.com/rasbt/LLMs-from-scratch/blob/main/ch05/07_gpt_to_llama/converting-gpt-to-llama2.ipynb
-6. RoPE, https://arxiv.org/abs/2104.09864
-7. RMSnorm
-8. SwiGLU, Glu variants improve transformer
-9. GQA
-10. https://arxiv.org/abs/2202.01306
-11. Adam
-12. AdamW
-13. ZeRO paper
-14. DeepSpeed Github
-15. PyTorch FSDP
-16. ZeRO Offload
-17. ZeRO Infinity
-18. NVIDIA Mixed Precision Training blog
-19. https://arxiv.org/abs/2110.02861
-20. https://arxiv.org/abs/2403.03507
-21. LoRA paper
-22. QLoRA paper
-23. https://github.com/cybertronai/gradient-checkpointing
-24. https://pytorch.org/blog/accelerating-pytorch-with-cuda-graphs/
-25. https://pytorch.org/blog/optimizing-production-pytorch-performance-with-graph-transformations/
-26. https://developer.nvidia.com/blog/understanding-the-visualization-of-overhead-and-latency-in-nsight-systems/
-27. https://openai.com/index/triton/
-28. flashattention
-29. unsloth
-30. layer normalization
-31. Liger Kernel paper
-32. Liger Kernel Talk: https://www.youtube.com/watch?v=gWble4FreV4
+1. Attention Is All You Need, https://doi.org/10.48550/arXiv.1706.03762.
+2. Improving Language Understanding by Generative Pre-Training, https://cdn.openai.com/research-covers/language-unsupervised/language_understanding_paper.pdf
+3. Language Models are Unsupervised Multitask Learners, https://cdn.openai.com/better-language-models/language_models_are_unsupervised_multitask_learners.pdf
+4. Language Models are Few-Shot Learners, https://arxiv.org/abs/2005.14165
+5. Converting GPT to Llama2, https://github.com/rasbt/LLMs-from-scratch/blob/main/ch05/07_gpt_to_llama/converting-gpt-to-llama2.ipynb
+6. RoFormer: Enhanced Transformer with Rotary Position Embedding, https://arxiv.org/abs/2104.09864
+7. Root Mean Square Layer Normalization, https://arxiv.org/abs/1910.07467
+8. GLU Variants Improve Transformer, https://arxiv.org/abs/2002.05202
+9. GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints, https://arxiv.org/abs/2305.13245
+10. Harmony: Overcoming the Hurdles of GPU Memory Capacity to Train Massive DNN Models on Commodity Servers, https://arxiv.org/abs/2202.01306
+11. Adam: A Method for Stochastic Optimization, https://arxiv.org/abs/1412.6980
+12. Decoupled Weight Decay Regularization, https://arxiv.org/abs/1711.05101
+13. ZeRO: Memory Optimizations Toward Training Trillion Parameter Models, https://arxiv.org/abs/1910.02054
+14. DeepSpeed, https://github.com/microsoft/DeepSpeed
+15. PyTorch FSDP: Experiences on Scaling Fully Sharded Data Parallel, https://arxiv.org/abs/2304.11277
+16. ZeRO-Offload: Democratizing Billion-Scale Model Training, https://arxiv.org/abs/2101.06840
+17. ZeRO-Infinity: Breaking the GPU Memory Wall for Extreme Scale Deep Learning, https://arxiv.org/abs/2104.07857
+18. Mixed-Precision Training of Deep Neural Networks, https://developer.nvidia.com/blog/mixed-precision-training-deep-neural-networks/
+19. 8-bit Optimizers via Block-wise Quantization, https://arxiv.org/abs/2110.02861
+20. GaLore: Memory-Efficient LLM Training by Gradient Low-Rank Projection, https://arxiv.org/abs/2403.03507
+21. LoRA: Low-Rank Adaptation of Large Language Models, https://arxiv.org/abs/2106.09685
+22. QLoRA: Efficient Finetuning of Quantized LLMs, https://arxiv.org/abs/2305.14314
+23. gradient-checkpointing, https://github.com/cybertronai/gradient-checkpointing
+24. Accelerating PyTorch with CUDA Graphs, https://pytorch.org/blog/accelerating-pytorch-with-cuda-graphs/
+25. Optimizing Production PyTorch Models’ Performance with Graph Transformations, https://pytorch.org/blog/optimizing-production-pytorch-performance-with-graph-transformations/
+26. Understanding the Visualization of Overhead and Latency in NVIDIA Nsight Systems, https://developer.nvidia.com/blog/understanding-the-visualization-of-overhead-and-latency-in-nsight-systems/
+27. Introducing Triton: Open-source GPU programming for neural networks, https://openai.com/index/triton/
+28. FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness, https://arxiv.org/abs/2205.14135
+29. Unsloth, https://unsloth.ai/
+30. Layer Normalization, https://arxiv.org/abs/1607.06450
+31. Liger Kernel: Efficient Triton Kernels for LLM Training, https://arxiv.org/abs/2410.10989
+32. GPU MODE Lecture 28: Liger Kernel - Efficient Triton Kernels for LLM Training, https://www.youtube.com/watch?v=gWble4FreV4
+33. PyTorch Profiler With TensorBoard, https://pytorch.org/tutorials/intermediate/tensorboard_profiler_tutorial.html
