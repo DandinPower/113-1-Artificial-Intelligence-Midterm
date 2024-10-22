@@ -17,7 +17,7 @@ def create_model_by_deepspeed_liger_kernel(ds_config: dict, config: LigerKernelC
     apply_liger_kernel_to_llama(
         rope=config.enable_rope_optimization,
         swiglu=config.enable_swiglu_optimization,
-        cross_entropy=not(config.enable_fused_linear_cross_entropy),
+        cross_entropy=False,
         fused_linear_cross_entropy=config.enable_fused_linear_cross_entropy,
         rms_norm=config.enable_rms_norm_optimization
     )
