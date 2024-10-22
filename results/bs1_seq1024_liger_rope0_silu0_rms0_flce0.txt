@@ -1,0 +1,2 @@
+peak_vram_usage_per_gpu(bytes),total_throughput(token/s),total_latency(s)
+4121754112.00,331.25,3.09

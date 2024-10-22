@@ -228,44 +228,100 @@ Following the same principle as the Fused Linear Cross Entropy, the Liger Kernel
 
 These fused kernels aim to fuse small operations together rather than executing them one by one. For example, in the case of RMSNorm, the formula is \[x_{\text{norm}} = \frac{x}{\text{RMS}}, \text{RMS} = \sqrt{\frac{1}{N} \sum_{i=1}^{N} x_i^2}\]. The calculation includes both the normalization and scaling parts, which can be fused together. Additionally, because it is a fused operation, some calculations can be done in place to reduce memory usage, and values like the RMS can be cached to reduce computation overhead.
 
-
 # Experimental Results
 
-The Liger Kernel run all benchmarks on a single NVIDIA A100 GPU (80 GB). The CrossEntropy kernel is benchmarked on vocab sizes in the set {40960, 81920, 122880, 163840}. The GeGLU and SwiGLU kernels are benchmarked on varying sequence lengths, whereas the RMSNorm, LayerNorm, and RoPE kernels are benchmarked on varying hidden dimensions. The sequence lengths and hidden dimension sizes are chosen from {4096, 8192, 12288, 16384}. All benchmarks are repeated 10 times to plot the median speed and memory along with [0.2, 0.8] quantile values as the lower and upper bounds.
+The Liger Kernel runs all benchmarks on a single NVIDIA A100 GPU (80 GB). The CrossEntropy kernel is benchmarked on vocab sizes in the set {40960, 81920, 122880, 163840}. The GeGLU and SwiGLU kernels are benchmarked on varying sequence lengths, whereas the RMSNorm, LayerNorm, and RoPE kernels are benchmarked on varying hidden dimensions. The sequence lengths and hidden dimension sizes are chosen from {4096, 8192, 12288, 16384}. All benchmarks are repeated 10 times to plot the median speed and memory along with [0.2, 0.8] quantile values as the lower and upper bounds.
 
-## Execution Time
+1. **Speed Benchmark:**
 
-## Peak Memory
+    ![image/kernel_execution_speed_benchmarks.png](image/kernel_execution_speed_benchmarks.png)
+    - **Figure 9: Kernel execution speed benchmarks**
 
-## Real Use Case Benchmark
+2. **Peak Memory:**
+
+    ![image/kernel_peak_allocated_memory_benchmarks.png](image/kernel_peak_allocated_memory_benchmarks.png)
+    - **Figure 10: Kernel peak allocated memory benchmarks.**
+
+3. **Llama3 8B Training with Fixed seq_length 512:**
+
+    ![image/comparison_of_peak_allocated_memory_and_throughput_for_LLaMA3-8B.png](image/comparison_of_peak_allocated_memory_and_throughput_for_LLaMA3-8B.png)
+    - **Figure 11: Comparison of peak allocated memory and throughput for LLaMA 3-8B.**
+
+The result is promising, showing that the Liger Kernel can significantly reduce memory usage and improve training speed compared to the baseline. In the real training process, the Liger Kernel only slightly increases the peak memory usage when scaling up the batch size, whereas the original Hugging Face implementation increases the peak memory usage linearly. This allows researchers or anyone who wants to train a large language model to scale up the batch size without worrying about peak memory usage. The Liger Kernel can also improve the overall throughput of the training process, which can reduce the training time and cost.
+
 
 # DEMO
 
-1. mine experiments environment
-    1. llama3.2 1B
-    2. 24 GB gpu (4090)
-    3. no lora -> full parameter training
-    4. fp16 mixed precision training
-    5. deepspeed cpu offloading for weights and optimizer states
-    6. gradient checkpointing
+To reproduce the results better, and profile the actual memory usage reduction and throughput improvement by the Liger Kernel, i design the following experiments to demonstrate the Liger Kernel's impact on training LLMs. All Demo code is available on the following Github Repository[112-2-Artificial-Intelligence-Midterm](https://github.com/DandinPower/112-2-Artificial-Intelligence-Midterm).
 
-1. show the memory usage by batch size
-1. show the throught scale by batch size
-2. show the ablation study on different method (focus on use all liger, use all liger without fused cross entropy, use none)
+- **Experiments Environment:**
+    - Opearting System: Ubuntu 24.04 Desktop
+    - CPU: i9-13900K
+    - DRAM: 128GB
+    - GPU: NVIDIA 4090 24GB
+
+- **Experiments Setup:**
+    - Batch Size: 1, 4, 8, 16, 32, 64, 96, 112
+    - Sequence Length: 1024
+    - Model: Llama3.2 1B (Huggingface Transformers)
+    - Full Parameter Training: No LoRA
+    - Enable mixed precision training (fp16)
+    - Enable Gradient Checkpointing
+    - Enable DeepSpeed CPU Weights and Optimizer States Offloading
+
+
+This setup is the move all static memory from GPU to CPU and discard all activation memory, so the peak memory usage is mainly caused by the checkpointing value, temporary activations and the gradients for the optimizer step.
+
+1. **Memory Usage Profiling:**
+
+    - Figure 12: Memory Snapshot Profiling at Batch ? with (a) Liger Kernel (b) Huggingface Transformers
+
+2. **Comparison of Peak Memory Usage:**
+
+3. **Comparison of Throughput:**
+
+## Ablation Study on Fused Linear Cross Entropy
 
 The reason to do this ablation study is that the Fused Linear Cross Entropy solve the most memory bottleneck, so knowing how many improvements it can bring is crucial.
-    
-    
-    1. compare throughput at different batch size
-    2. compare memory usage at different batch size
+
+- **Experiments Strategies:**
+    - Enable All Liger Kernel (Fused Linear Cross Entropy, RMSNorm, RoPE, SwiGLU)
+    - Enable All Liger Kernel without Fused Linear Cross Entropy (RMSNorm, RoPE, SwiGLU)
+    - Disable All Liger Kernel
+
+1. **Comparison of Peak Memory Usage:**
+
+2. **Comparison of Throughput:**
+
+
 
 # Conclusion and Personal Reflection
 
-## The main problem of the current LLM training
+- **The main problem of the current LLM training**
+    
+    Cross Entropy Peak Memory Let the batch size and sequence length be limited.
 
-## The main contribution of the Liger kernel -> fused kernel + chunking 
+- **The main contribution of the Liger kernel**
 
-## How to train the large language model efficiently in 2024
+    1. fused kernel
+    2. chunking 
+
+- **How to train the large language model efficiently in 2024**
+
+    There are many memory efficient training techniques for training large langauge models nowadays, thanks to the Huggingface Transformers library developers and the open-source community. The above technique (also include liger kernel) all integrated into the Huggingface Transformers library, so it is easy to use and deploy. The following is my recommended way to train a large language model in full parameter training (don't consider LoRA) memory efficiently in 2024:
+
+    - *The must enable no matter what:*
+        1. enable liger kernel
+        2. (if multiple GPUs) enable stage2 zero
+        3. enable gradient checkpointing (slightly increase computation overhead)
+
+    - *If Still have Out of Memory Issue:*
+
+        4. enable mixed precision training (slightly degrade the precision)
+        5. (if multiple GPUs) enable stage3 zero (with additional communication footprint)
+        6. enable deepspeed cpu offloading (increase PCIE transfer overhead)
+        7. enable 8bit optimizer or GaLore (degrade the precision)
+        8. enable deepspeed nvme offloading (increase a lot PCIE transfer overhead)
 
 # Reference
 
@@ -275,10 +331,10 @@ The reason to do this ablation study is that the Fused Linear Cross Entropy solv
 2. deepspeed zero, fsdp
 3. deepspeed offloading
 4. gradient checkpointing
-5. lora, qlora
+5. lora
+6. Qlora
 6. 8bit optimizer
 7. triton
-8. sympy for forward and automatically backward
 9. flashattention
 10. unsloth.ai 
 11. nvidia mixed precision training

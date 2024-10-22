@@ -16,6 +16,7 @@ from src.utils import set_random_seed, print_rank_0, print_verbose, create_liger
 
 SNAP_SHOT_DIRS = "snap_shots"
 PROFILE_LOG_DIRS = "logs"
+RESULT_DIRS = "results"
 
 class DeepSpeedTrainer:
     def __init__(self):
@@ -109,8 +110,11 @@ class DeepSpeedTrainer:
         iteration_latency = total_time / args.num_train_iterations
         throughput = args.train_batch_size * args.max_seq_len / iteration_latency
         print_rank_0(f"[RESULT] Peak VRAM Usage(per gpu): {max_memory / 1024**2:.2f} MB", args.global_rank)
-        print_rank_0(f"[RESULT] Iteration Latency(total): {iteration_latency:.2f} ms", args.global_rank)
+        print_rank_0(f"[RESULT] Iteration Latency(total): {iteration_latency:.2f} s", args.global_rank)
         print_rank_0(f"[RESULT] Throughput(total): {throughput:.2f} (token/s)", args.global_rank)
+        with open(f"./{RESULT_DIRS}/{get_snap_shot_name(args)}.txt", 'w') as f:
+            f.write(f"peak_vram_usage_per_gpu(bytes),total_throughput(token/s),total_latency(s)\n")
+            f.write(f"{max_memory:.2f},{throughput:.2f},{iteration_latency:.2f}\n")
 
         snapshot = torch.cuda.memory._snapshot()
         with open(f"./{SNAP_SHOT_DIRS}/{get_snap_shot_name(args)}.pickle", 'wb') as f:
@@ -151,6 +155,7 @@ if __name__ == "__main__":
     
     os.makedirs(SNAP_SHOT_DIRS, exist_ok=True)
     os.makedirs(PROFILE_LOG_DIRS, exist_ok=True)
+    os.makedirs(RESULT_DIRS, exist_ok=True)
 
     trainer = DeepSpeedTrainer()
     trainer.init(args)
