@@ -2,3 +2,5 @@ torch
 transformers
 huggingface_hub
 liger-kernel-nightly
+deepspeed
+torch_tb_profiler
