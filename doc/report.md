@@ -105,31 +105,26 @@ Gradient checkpointing is a technique that trades compute for memory by recomput
 ### GPU VRAM Bottleneck
 
 So after we have optimized the static memory like using DeepSpeed CPU Offloading to move all static memory from GPU to CPU, enable Gradient Checkpointing to discard all activation. The peak GPU memory usage caused by following two parts:
-- The actual **checkpointing value** (which is the stored checkpoint).
-- The highest temporary activation usage (occurring between two checkpoints or in sections that aren't checkpointed).
-- In the Huggingface Transformers library, a checkpoint is added to the input of each decoder layer. Therefore, the checkpointing value only needs to store the following:
-    - `batch * seq * hidden_size * dtype_size * num_layers` For example, using **LLaMA 3.2B** with `batch = 4`, `seq = 1024`, `hidden_size = 2048`, `dtype_size = 2` (fp16), and `num_layers = 16`, the checkpointing value is calculated as:
-    - `4 * 1024 * 2048 * 2 * 16 = 268,435,456 bytes = 256MB`
-- For the **temporary activation memory**, the largest factor comes from **cross-entropy-related activations**, which include logits, shifted logits, and intermediate values during the cross-entropy calculation.
+1. **Stored Checkpoint:** the actual checkpointed value, in the Huggingface Transformers library, a checkpoint is added to the input of each decoder layer. Therefore, the checkpointing value only needs to store the following: `batch * seq * hidden_size * dtype_size * num_layers`. For example, using **LLaMA 3.2 1B** with `batch = 4`, `seq = 1024`, `hidden_size = 2048`, `dtype_size = 2` (fp16), and `num_layers = 16`, the checkpointing value is calculated as: `4 * 1024 * 2048 * 2 * 16 = 268,435,456 bytes = 256MB`.
+2. **Temporary activation:** occurring between two checkpoints or in sections that aren't checkpointed, the largest factor comes from **cross-entropy-related activations**, which include logits, shifted logits, and intermediate values during the cross-entropy calculation.
 
     ![image.png](image/huggingface_cross_entropy.png)
     - **Figure 5: Llama3.2 Logits related Implementation of HuggingFace Transformers Library.**
 
-- This is significant because the `vocab_size` is often much larger than the `hidden_size`. For example, in LLaMA 3.2 1B, `vocab_size = 128,256`, while `hidden_size = 2048`.
-- Thus, a single logits value can occupy:
-    - `4 * 1024 * 128,256 * 4 (cast to float for loss calculation) = 2,101,346,304 bytes ≈ 2GB`
-- Moreover, there are multiple instances of these logits-related values. In our experiments, we observed that there are three logits-related values active simultaneously (logits, shift_logits, cross-entropy temp value). This results in: `2GB * 3 = 6GB` VRAM usage.
+The logits is significant because the `vocab_size` is often much larger than the `hidden_size`. For example, in LLaMA 3.2 1B, `vocab_size = 128,256`, while `hidden_size = 2048`. Thus, a single logits value can occupy:
+`4 * 1024 * 128,256 * 4 (cast to float for loss calculation) = 2,101,346,304 bytes ≈ 2GB`.
+Moreover, there are multiple instances of these logits-related values. In our experiments, we observed that there are three logits-related values active simultaneously (logits, shift_logits, cross-entropy temp value). This results in: `2GB * 3 = 6GB` VRAM usage.
     
-    ![image/snapshot_of_peak_usage_by_ce.png](image/snapshot_of_peak_usage_by_ce.png)
+![image/snapshot_of_peak_usage_by_ce.png](image/snapshot_of_peak_usage_by_ce.png)
     
-    - **Figure 6: VRAM Snapshot for training Llama3.2 1B while enable gradient checkpoint + zero infinity cpu offloading with batch=4, seq=1024.**
+- **Figure 6: VRAM Snapshot for training Llama3.2 1B while enable gradient checkpoint + zero infinity cpu offloading with batch=4, seq=1024.**
 
-- The factor affecting logits memory usage is primarily `batch_size` and `seq_size`. Therefore, increasing the batch size or sequence length leads to a rapid increase in peak memory usage.
+The factor affecting logits memory usage is primarily `batch_size` and `seq_size`. Therefore, increasing the batch size or sequence length leads to a rapid increase in peak memory usage.
     
-    ![logits_related_activation_visualize.png](image/logits_related_activation_visualize.png)
-    - **Figure 7: Comparison of Estimated Scaling Memory Usage between Checkpoint and Logits-Related Size.**
+![logits_related_activation_visualize.png](image/logits_related_activation_visualize.png)
+- **Figure 7: Comparison of Estimated Scaling Memory Usage between Checkpoint and Logits-Related Size.**
 
-- This peak memory usage limits the batch size that can be increased, even if there is space available to use.
+This peak memory usage limits the batch size that can be increased, even if there is space available to use.
 
 ## Kernel Operation Level Optimization
 
@@ -339,9 +334,13 @@ In summary, the Liger Kernel provides a robust solution to the memory challenges
         4. Enable mixed precision training (slightly reduces precision)
         5. (If multiple GPUs) Enable Stage 3 ZeRO (with additional communication overhead)
         6. Enable DeepSpeed CPU offloading (increases PCIe transfer overhead)
-        7. Enable 8-bit optimizer or GaLore (reduces precision)
-        8. Enable DeepSpeed NVMe offloading (significantly increases PCIe transfer overhead)
+        7. Enable GaLore (reduces precision)
+        8. Enable 8-bit optimizer (reduces precision)
+        9. Enable DeepSpeed NVMe offloading (significantly increases PCIe transfer overhead)
 
+    - *If there is a specific batch size setting:*
+        1. Adjust to an appropriate batch size (to avoid OOM errors and fully utilize the GPU).
+        2. Use gradient accumulation to achieve the desired effective batch size (e.g., accumulate 4 batches of 32 to reach an effective batch size of 128).
 
 # Reference
 
