@@ -9,7 +9,7 @@ FP16_HYSTERESIS=1
 REDUCE_BUCKET_SIZE=1e5
 GRADIENT_CLIPPING=0.9
 
-PER_DEVICE_TRAIN_BATCH_SIZE=112
+PER_DEVICE_TRAIN_BATCH_SIZE=4
 NUM_TRAIN_ITERATIONS=3
 GRADIENT_ACCUMULATION_STEPS=1
 MAX_SEQ_LENGTH=1024
@@ -40,3 +40,4 @@ deepspeed --num_gpus $NUM_GPUS deepspeed_liger_kernel.py --model_name $MODEL_NAM
     --step_per_print $STEP_PER_PRINT --seed $SEED \
     --enable_liger_rope $ENABLE_LIGER_ROPE --enable_liger_swiglu $ENABLE_LIGET_SWIGLU --enable_liger_rms $ENABLE_LIGER_RMS --enable_liger_flce $ENABLE_FLCE \
     --gradient_checkpointing \
+    # --is_flash_attn

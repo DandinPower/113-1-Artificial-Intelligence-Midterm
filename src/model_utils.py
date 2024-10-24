@@ -4,7 +4,7 @@ from transformers.integrations.deepspeed import HfDeepSpeedConfig
 from liger_kernel.transformers import apply_liger_kernel_to_llama
 from src.utils import LigerKernelConfig
 
-def create_model_by_deepspeed_liger_kernel(ds_config: dict, config: LigerKernelConfig, model_name: str, gradient_checkpointing: bool) -> Module:
+def create_model_by_deepspeed_liger_kernel(ds_config: dict, config: LigerKernelConfig, model_name: str, gradient_checkpointing: bool, is_flash_attn: bool) -> Module:
     assert ds_config is not None, "ds_config must be provided"
     assert model_name is not None, "model_name must be provided"
     assert gradient_checkpointing is not None, "gradient_checkpoint must be provided"
@@ -21,7 +21,11 @@ def create_model_by_deepspeed_liger_kernel(ds_config: dict, config: LigerKernelC
         fused_linear_cross_entropy=config.enable_fused_linear_cross_entropy,
         rms_norm=config.enable_rms_norm_optimization
     )
-    model = AutoModelForCausalLM.from_pretrained(model_name, use_cache=False)
+    
+    if is_flash_attn:
+        model = AutoModelForCausalLM.from_pretrained(model_name, use_cache=False, attn_implementation="flash_attention_2")
+    else:
+        model = AutoModelForCausalLM.from_pretrained(model_name, use_cache=False)
 
     if gradient_checkpointing:
         model.gradient_checkpointing_enable()

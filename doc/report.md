@@ -180,7 +180,7 @@ The Liger Kernel uses Triton to implement fused operations at the kernel level. 
 2. **Kernel Level Optimization:** Compared to the eager execution model, Triton can optimize at the kernel operation level, enabling more detailed optimizations.
 3. **Python-native:** There's no need to maintain different types of code files, like C++ and Python.
 4. **Clean dependency:** Triton is a standalone library that can be easily integrated into existing codebases.
-5. **Real Production Ready Usecase:** There are already several successful kernel operation-level projects done using Triton, such as FlashAttention and Unsloth [28,29].
+5. **Real Production Ready Usecase:** There are already several successful kernel operation-level projects done using Triton, such as Unsloth [29].
 
         
 # Method
@@ -262,8 +262,8 @@ To reproduce the results and profile the actual memory usage reduction and throu
     - GPU: NVIDIA 4090 24GB
 
 - **Experiment Setup:**
-    - Batch Size: 1, 4, 8, 16, 32, 64, 96, 112
-    - Sequence Length: 1024
+    - Batch Size (fixed sequence length at 1024): 1, 4, 8, 16, 32, 64, 96, 112
+    - Sequence Length (fixed batch size at 4): 512, 1024, 2048, 4096, 8192, 12288, 16384, 24576
     - Model: Llama3.2 1B (Huggingface Transformers)
     - Full Parameter Training: No LoRA
     - Enable mixed precision training (fp16)
@@ -279,12 +279,17 @@ This setup moves all static memory from the GPU to the CPU and discards all acti
 
     The memory snapshot is generated using the PyTorch profiler and Tensorboard [33]. From the result, we can observe that after enabling Fused Linear Cross Entropy, the peak memory issue no longer exists.
 
-- **Comparison of Throughput and Peak Memory Usage:**
+- **Comparison of Throughput and Peak Memory Usage with a Fixed Sequence Length:**
 
     ![image/comparison_2_strategies.png](image/comparison_2_strategies.png)
-    - **Figure 13: Comparison of Throughput and Peak Memory Usage between Liger Kernel and Huggingface Transformers.**
+    - **Figure 13: Comparison of Throughput and Peak Memory Usage between Liger Kernel and Huggingface Transformers with a Fixed Sequence Length.**
 
-    From the peak memory usage results, we can see that without using the Liger Kernel, due to Cross-Entropy-related activations, the peak memory usage increases linearly with the batch size. However, when using the Liger Kernel, the peak memory usage scales much more slowly. HuggingFace encountered an OOM issue at batch size 16, but the Liger Kernel can scale up to batch size 112 without any issue. Throughput is also improved by using the Liger Kernel for two reasons: one, the kernel execution speed is faster, and two, we can run at a larger batch size, which utilizes the GPU more efficiently.
+- **Comparison of Throughput and Peak Memory Usage with a Fixed Batch Size:**
+
+    ![image/comparison_fixed_batch_4_2_strategies.png](image/comparison_fixed_batch_4_2_strategies.png)
+    - **Figure 14: Comparison of Throughput and Peak Memory Usage between Liger Kernel and Huggingface Transformers with a Fixed Batch Size.**
+
+    From the peak memory usage results, we can see that without using the Liger Kernel, due to Cross-Entropy-related activations, the peak memory usage increases linearly with the batch size or sequence length. However, when using the Liger Kernel, the peak memory usage scales much more slowly. HuggingFace encountered an OOM issue at batch size `16`, or sequence length `2048`, but the Liger Kernel can scale up to batch size `112` or sequence length `24576` without any issue. Throughput is also improved by using the Liger Kernel for two reasons: one, the kernel execution speed is faster, and two, we can run at a larger batch size, which utilizes the GPU more efficiently.
 
 ## Ablation Study on Fused Linear Cross Entropy
 
@@ -295,10 +300,15 @@ The reason for conducting this ablation study is that Fused Linear Cross Entropy
     - Enable all Liger Kernels except Fused Linear Cross Entropy (RMSNorm, RoPE, SwiGLU)
     - Enable all Liger Kernels (Fused Linear Cross Entropy, RMSNorm, RoPE, SwiGLU)
 
-- **Comparison of Throughput and Peak Memory Usage:**
+- **Comparison of Throughput and Peak Memory Usage with a Fixed Sequence Length:**
 
     ![image/comparison_3_strategies.png](image/comparison_3_strategies.png)
-    - **Figure 14: Ablation Study on Fused Linear Cross Entropy.**
+    - **Figure 15: Ablation Study on Fused Linear Cross Entropy with Fixed Sequence Length.**
+
+- **Comparison of Throughput and Peak Memory Usage with a Fixed Batch Size:**
+
+    ![image/comparison_fixed_batch_4_3_strategies.png](image/comparison_fixed_batch_4_3_strategies.png)
+    - **Figure 16: Ablation Study on Fused Linear Cross Entropy with Fixed Batch Size.**
 
     From the results, we can confirm that nearly 100% of the memory reduction and throughput improvement is caused by Fused Linear Cross Entropy. The other fused kernels do not have a significant impact on memory usage and throughput. Therefore, Fused Linear Cross Entropy is the most crucial component of the Liger Kernel.
 
@@ -338,7 +348,7 @@ In summary, the Liger Kernel provides a robust solution to the memory challenges
         8. Enable 8-bit optimizer (reduces precision)
         9. Enable DeepSpeed NVMe offloading (significantly increases PCIe transfer overhead)
 
-    - *If there is a specific batch size setting:*
+    - *If have desired batch size:*
         1. Adjust to an appropriate batch size (to avoid OOM errors and fully utilize the GPU).
         2. Use gradient accumulation to achieve the desired effective batch size (e.g., accumulate 4 batches of 32 to reach an effective batch size of 128).
 

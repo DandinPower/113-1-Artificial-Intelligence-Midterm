@@ -61,7 +61,7 @@ class DeepSpeedTrainer:
         distributed.barrier()
 
         print_verbose('[INIT] Create Model', verbose)
-        self.model = create_model_by_deepspeed_liger_kernel(ds_config, liger_kernel_config, model_name=args.model_name, gradient_checkpointing=args.gradient_checkpointing)
+        self.model = create_model_by_deepspeed_liger_kernel(ds_config, liger_kernel_config, model_name=args.model_name, gradient_checkpointing=args.gradient_checkpointing, is_flash_attn=args.is_flash_attn)
         print_verbose('[INIT] Model created successfully', verbose)
 
         print_verbose('[INIT] Create Optimizer', verbose)
@@ -149,6 +149,7 @@ if __name__ == "__main__":
     parser.add_argument("--enable_liger_rms", type=int)
     parser.add_argument("--enable_liger_flce", type=int)
     parser.add_argument('--gradient_checkpointing', action='store_true', help='Enable HF gradient checkpointing for model.')
+    parser.add_argument('--is_flash_attn', action='store_true', help='Enable Flash Attention 2.')
 
     parser = deepspeed.add_config_arguments(parser)
     args = parser.parse_args()
