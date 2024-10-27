@@ -1,8 +1,8 @@
 torch
 transformers
-huggingface_hub
-liger-kernel-nightly
 deepspeed
+flash-attn
+liger-kernel-nightly
+huggingface_hub
 torch_tb_profiler
 matplotlib
-flash-attn

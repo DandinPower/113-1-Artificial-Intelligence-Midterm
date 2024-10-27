@@ -291,6 +291,14 @@ This setup moves all static memory from the GPU to the CPU and discards all acti
 
     From the peak memory usage results, we can see that without using the Liger Kernel, due to Cross-Entropy-related activations, the peak memory usage increases linearly with the batch size or sequence length. However, when using the Liger Kernel, the peak memory usage scales much more slowly. HuggingFace encountered an OOM issue at batch size `16`, or sequence length `2048`, but the Liger Kernel can scale up to batch size `112` or sequence length `24576` without any issue. Throughput is also improved by using the Liger Kernel for two reasons: one, the kernel execution speed is faster, and two, we can run at a larger batch size, which utilizes the GPU more efficiently.
 
+- **Memory Usage Increase After Enabling Liger Kernel:**
+
+    ![image/memory_increase_pattern_after_liger_kernel.png](image/memory_increase_pattern_after_liger_kernel.png)
+    - **Figure 15: VRAM Snapshot of Llama3.2 1B, Seq Length 1024 with (a) Batch Size = 4 (b) Batch Size = 112.**
+
+    By comparing the memory usage patterns at Batch Size 4 and Batch Size 112, we can see that, since the cross-entropy peak issue is resolved, the memory usage pattern increases more reasonably. The memory increase is caused only by other temporary activations, which are calculated by a factor like `batch_size * seq_size * hidden_size`. Compared to the original `batch_size * seq_size * vocab_size`, the memory usage is much more reasonable, and the GPU utilization is much higher because we can use a larger batch size to fully utilize the GPU.
+
+
 ## Ablation Study on Fused Linear Cross Entropy
 
 The reason for conducting this ablation study is that Fused Linear Cross Entropy solves the most significant memory bottleneck, so understanding how much improvement it brings is crucial.
@@ -303,12 +311,12 @@ The reason for conducting this ablation study is that Fused Linear Cross Entropy
 - **Comparison of Throughput and Peak Memory Usage with a Fixed Sequence Length:**
 
     ![image/comparison_3_strategies.png](image/comparison_3_strategies.png)
-    - **Figure 15: Ablation Study on Fused Linear Cross Entropy with Fixed Sequence Length.**
+    - **Figure 16: Ablation Study on Fused Linear Cross Entropy with Fixed Sequence Length.**
 
 - **Comparison of Throughput and Peak Memory Usage with a Fixed Batch Size:**
 
     ![image/comparison_fixed_batch_4_3_strategies.png](image/comparison_fixed_batch_4_3_strategies.png)
-    - **Figure 16: Ablation Study on Fused Linear Cross Entropy with Fixed Batch Size.**
+    - **Figure 17: Ablation Study on Fused Linear Cross Entropy with Fixed Batch Size.**
 
     From the results, we can confirm that nearly 100% of the memory reduction and throughput improvement is caused by Fused Linear Cross Entropy. The other fused kernels do not have a significant impact on memory usage and throughput. Therefore, Fused Linear Cross Entropy is the most crucial component of the Liger Kernel.
 
