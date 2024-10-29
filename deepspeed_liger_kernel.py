@@ -84,6 +84,7 @@ class DeepSpeedTrainer:
         torch.cuda.reset_peak_memory_stats()
         torch.cuda.memory._record_memory_history()
         prof = torch.profiler.profile(
+            activities=[torch.profiler.ProfilerActivity.CPU, torch.profiler.ProfilerActivity.CUDA],
             schedule=torch.profiler.schedule(wait=0, warmup=0, active=3, repeat=1),
             on_trace_ready=torch.profiler.tensorboard_trace_handler(f'./{PROFILE_LOG_DIRS}/{get_snap_shot_name(args)}'),
             record_shapes=True,
